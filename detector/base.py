@@ -1,10 +1,11 @@
 
 class Detector:
     
-    def __init__(self , name):
+    def __init__(self , name , detector_type):
         self.name = name
+        self.type = detector_type
         
-    def process_packet(self, packet):
+    def extract_details(self, packet):
         pass
 
     
