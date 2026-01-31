@@ -5,7 +5,7 @@ class Logger:
     def __init__(self, backend_base_url , backend_port , log_path = "logs.txt"):
         self.backend_base_url = backend_base_url
         self.backend_port  = backend_port
-        self.backend_url = f"{self.backend_base_url}:{self.backend_port}"
+        self.backend_url = f"{self.backend_base_url}:{self.backend_port}/ws/device"
         self.log_path = log_path
         self.socket = None
         

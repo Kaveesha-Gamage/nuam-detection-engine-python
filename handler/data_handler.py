@@ -1,6 +1,8 @@
 from datetime import datetime, timezone
 from logger.logger import Logger
 from handler.event_handler import EventTypeHandler
+from threading import Thread, Event
+import time
 
 class DataHandler:
     
@@ -27,16 +29,36 @@ class DataHandler:
             "http_requests": 0,
             "tls_handshakes": 0
         }
+        
         self.sequence_number = 0
+        self._stop_event = Event()
+        self._check_thread = None
+        self.timeout_seconds = 300
+        self.idle_seconds = 180
+
     
     def parse_details(self, details):
         out = {}
-        out['mac'] = details['src_mac']
-        out['ip_address'] = details['src_ip']
+        
+        if "src_mac" in details:
+            out['mac'] =  details['src_mac']
+        elif "eth_src" in details:
+            out['mac'] = details['eth_src']
+        else:
+            out['mac'] = 'Unknown'
+            
+        
+        if "src_ip" in details:
+            out['ip_address'] = details['src_ip']
+        elif "psrc" in details:
+            out['ip_address'] = details['psrc']
+        else:
+            out['ip_address'] = 'Unknown'
+            
         out['hostname'] = 'Unknown'
         out['first_seen'] = None
         out['last_seen'] = None
-        out['online'] = False
+        out['online'] = True
         out['device_type'] = 'Unknown'
         out['vendor'] = 'Unknown'
         out['os'] = 'Unknown'
@@ -50,7 +72,6 @@ class DataHandler:
     
     def handle_observed_data(self, details , observed_type):
         self.handle_device_join_event(details)
-            
         
     def send_batch_data(self):
         if len(self.batch) > 0:
@@ -58,7 +79,7 @@ class DataHandler:
             self.batch.clear()
             return batch_to_send
         
-    def add_to_batch(self, event):
+    def add_to_batch(self, event,):
         self.batch.append(event)
         
     
@@ -70,15 +91,15 @@ class DataHandler:
         event = self.event_type_handler.handle_event_type(event_type, details, self.sequence_number)
         print(f"[EVENT GENERATED] Type: {event_type} | Sequence: {self.sequence_number} | Details: {details}", flush=True)
         self.sequence_number += 1
-        # self.logger.send_event(event)
+        self.logger.send_event(event)
         
     def add_known_device(self, mac_address, details):
-        device_data = self.parse_details(details)
-        device_data['first_seen'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
-        device_data['last_seen'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
-        self.known_devices[mac_address] = device_data
+        details['first_seen'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        details['last_seen'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+        self.known_devices[mac_address] = details
         self.metric_data['total_devices'] += 1
         self.metric_data['active_devices'] += 1
+        print(self.known_devices)
         
     def remove_from_known_devices(self, mac_address):
         if mac_address in self.known_devices:
@@ -86,17 +107,76 @@ class DataHandler:
             return True
         return False
 
-
     def handle_device_join_event(self, details):
-        
-        if 'src_mac' not in details:
+        mac_address = ""
+        if "src_mac" in details:
+            mac_address = details['src_mac']
+        elif "eth_src" in details:
+            mac_address = details['eth_src']
+        else:
+            mac_address = 'Unknown'
+            
+        if mac_address == 'Unknown':
             return
+                
+        if mac_address in self.known_devices:
+            if self.known_devices[mac_address]['mac'] == "Unknown":
+                parsed_details = self.parse_details(details)
+                self.known_devices[mac_address].update(parsed_details)
         
-        mac_address = details["src_mac"]
+            self.known_devices[mac_address]['last_seen'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
+            self.known_devices[mac_address]['online'] = True
+            self.known_devices[mac_address]['status'] = 'active'
+            # self.generate_event(parsed_details, "DEVICE_ONLINE")
+            
+        
         if mac_address not in self.known_devices:
             parsed_details = self.parse_details(details)
             self.add_known_device(mac_address, parsed_details)
-            self.generate_event(parsed_details , event_type="DEVICE_JOINED")
-    
+            # self.generate_event(parsed_details, "DEVICE_JOINED")
+            
     def handle_device_left_event(self, mac_address):
         return self.remove_from_known_devices(mac_address)
+    
+    def start_periodic_check(self, interval=60):
+        def _periodic_check():
+            while not self._stop_event.is_set():
+                self.periodic_check_for_device_leave()
+                time.sleep(interval)
+        
+        self._check_thread = Thread(target=_periodic_check, daemon=True)
+        self._check_thread.start()
+    
+    def stop_periodic_check(self):
+        if self._check_thread:
+            self._stop_event.set()
+            self._check_thread.join(timeout=5)
+            print("[DATA HANDLER] Periodic device check stopped", flush=True)
+    
+    def periodic_check_for_device_leave(self):
+        current_time = datetime.now(timezone.utc)
+        
+        if len(self.known_devices.keys()) == 0:
+            return
+        
+        for mac, details in self.known_devices.items():
+            last_seen_str = details.get('last_seen')
+            if last_seen_str:
+                last_seen_time = datetime.fromisoformat(last_seen_str.replace('Z', '+00:00'))
+                elapsed_time = (current_time - last_seen_time).total_seconds()
+                
+                if elapsed_time > self.timeout_seconds:
+                    details['online'] = False
+                    self.metric_data['active_devices'] -= 1
+                    self.handle_device_left_event(mac)
+                    # self.generate_event(details, "DEVICE_LEFT")
+                    
+                elif elapsed_time > self.idle_seconds:
+                    details['status'] = 'idle'
+                    self.metric_data['active_devices'] -= 1
+                    # self.generate_event(details, "DEVICE_IDLE")
+                    
+            print(f"[PERIODIC CHECK] Device: {mac} | Last Seen: {last_seen_str} | Elapsed: {elapsed_time} seconds", flush=True)
+        print(f"[PERIODIC CHECK] Known devices after check: {list(self.known_devices.keys())}", flush=True)
+        print("[DATA HANDLER] Periodic device check completed", flush=True)
+        

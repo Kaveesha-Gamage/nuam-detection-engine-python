@@ -14,7 +14,7 @@ def generate_test_traffic(net):
     while True:
         src = random.choice(hosts)
         dst = random.choice([h for h in hosts if h != src])
-        print(f"[TRAFFIC] {src.name} {dst.IP()}", flush=True)
+        # print(f"[TRAFFIC] {src.name} {dst.IP()}", flush=True)
         src.cmd(f"ping -c 1 {dst.IP()} > /dev/null 2>&1")
         time.sleep(random.uniform(1, 3))
 
@@ -22,7 +22,7 @@ def generate_test_traffic(net):
 def start_detection_engine():
     engine = DetectionEngine(ENABLED_DETECTORS)
     logger = Logger(BACKEND_BASE_URL, BACKEND_PORT)
-    # logger.init_socket_connection()
+    logger.init_socket_connection()
     event_type_handler = EventTypeHandler()
     data_handler = DataHandler(logger , event_type_handler)
 

@@ -14,7 +14,6 @@ class ARPDetector(Detector):
             "eth_dst": eth.dst,
             "eth_type": eth.type,
             "is_broadcast": eth.dst == "ff:ff:ff:ff:ff:ff",
-            
             "src_mac": arp_layer.hwsrc,
             "dst_mac": arp_layer.hwdst,
             "src_ip": arp_layer.psrc,
