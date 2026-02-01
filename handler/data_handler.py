@@ -36,7 +36,6 @@ class DataHandler:
         self.timeout_seconds = 300
         self.idle_seconds = 180
 
-    
     def parse_details(self, details):
         out = {}
         
@@ -68,8 +67,7 @@ class DataHandler:
         out['access_logs'] = []
         out['access_services'] = []
         return out
-    
-    
+        
     def handle_observed_data(self, details , observed_type):
         self.handle_device_join_event(details)
         
@@ -82,11 +80,9 @@ class DataHandler:
     def add_to_batch(self, event,):
         self.batch.append(event)
         
-    
     def send_immediate_event(self , event):
         self.logger.send_event(event)
 
-    
     def generate_event(self, details, event_type):
         event = self.event_type_handler.handle_event_type(event_type, details, self.sequence_number)
         print(f"[EVENT GENERATED] Type: {event_type} | Sequence: {self.sequence_number} | Details: {details}", flush=True)
@@ -162,21 +158,24 @@ class DataHandler:
         for mac, details in self.known_devices.items():
             last_seen_str = details.get('last_seen')
             if last_seen_str:
-                last_seen_time = datetime.fromisoformat(last_seen_str.replace('Z', '+00:00'))
-                elapsed_time = (current_time - last_seen_time).total_seconds()
+                last_seen = datetime.strptime(
+                    details['last_seen'],
+                    "%Y-%m-%dT%H:%M:%S.%fZ"
+                ).replace(tzinfo=timezone.utc)
+
+                elapsed = (current_time - last_seen).total_seconds()
                 
-                if elapsed_time > self.timeout_seconds:
+                if elapsed > self.timeout_seconds:
                     details['online'] = False
                     self.metric_data['active_devices'] -= 1
                     self.handle_device_left_event(mac)
                     # self.generate_event(details, "DEVICE_LEFT")
                     
-                elif elapsed_time > self.idle_seconds:
+                elif elapsed > self.idle_seconds:
                     details['status'] = 'idle'
                     self.metric_data['active_devices'] -= 1
                     # self.generate_event(details, "DEVICE_IDLE")
                     
-            print(f"[PERIODIC CHECK] Device: {mac} | Last Seen: {last_seen_str} | Elapsed: {elapsed_time} seconds", flush=True)
+            print(f"[PERIODIC CHECK] Device: {mac} | Last Seen: {last_seen_str} | Elapsed: {elapsed} seconds", flush=True)
         print(f"[PERIODIC CHECK] Known devices after check: {list(self.known_devices.keys())}", flush=True)
         print("[DATA HANDLER] Periodic device check completed", flush=True)
-        
