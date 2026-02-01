@@ -10,10 +10,8 @@ if __name__ == "__main__":
     from mininet.log import setLogLevel
     setLogLevel("info")
 
-    #Start Mininet network
     net = create_lab_network()
 
-    #Start traffic generation in a thread (on VM host)
     traffic_thread = Thread(
         target=generate_test_traffic,
         args=(net,),
@@ -21,7 +19,6 @@ if __name__ == "__main__":
     )
     traffic_thread.start()
 
-    #Start detection engine inside hIDS host
     hIDS = net.get('hIDS')
     print("*** Starting detection engine on hIDS")
     
@@ -42,5 +39,4 @@ if __name__ == "__main__":
                 
     CLI(net)
 
-    #Stop network on exit
     net.stop()
