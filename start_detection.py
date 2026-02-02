@@ -4,7 +4,10 @@ from logger.logger import Logger
 from handler.event_handler import EventTypeHandler
 from handler.data_handler import DataHandler
 from utils.packet_source import start_sniffing
+from dotenv import load_dotenv
+import os
 
+load_dotenv()
 
 def start_detection_engine():
     engine = DetectionEngine(ENABLED_DETECTORS)

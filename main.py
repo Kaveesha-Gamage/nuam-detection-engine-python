@@ -3,10 +3,10 @@ from threading import Thread
 from network.topology import create_lab_network
 from network.runner import generate_test_traffic
 from mininet.cli import CLI
-import time
-import sys
 import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 if __name__ == "__main__":
     from mininet.log import setLogLevel
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     print("*** Starting detection engine on hIDS")
     
     det_engine_proc = subprocess.Popen(
-        ["sudo", "-E", "python3", "/media/sf_shared/nuam-detection-engine-python/start_detection.py"],
+        ["sudo", "-E", "python3", os.getenv("DETECTION_ENGINE_PATH")],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     )
