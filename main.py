@@ -5,6 +5,8 @@ from network.runner import generate_test_traffic
 from mininet.cli import CLI
 import time
 import sys
+import os
+
 
 if __name__ == "__main__":
     from mininet.log import setLogLevel
