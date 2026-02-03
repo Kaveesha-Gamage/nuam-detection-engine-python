@@ -12,7 +12,7 @@ class DataHandler:
         self.known_devices = {}
         self.batch = []
         self.metric_data = {
-            "messure_time": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+            "measure_time": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             "total_devices": 0,
             "active_devices": 0,
             "data_sent": 0,
@@ -77,7 +77,7 @@ class DataHandler:
             self.batch.clear()
             return batch_to_send
         
-    def add_to_batch(self, event,):
+    def add_to_batch(self, event):
         self.batch.append(event)
         
     def send_immediate_event(self , event):
@@ -85,7 +85,6 @@ class DataHandler:
 
     def generate_event(self, details, event_type):
         event = self.event_type_handler.handle_event_type(event_type, details, self.sequence_number)
-        print(f"[EVENT GENERATED] Type: {event_type} | Sequence: {self.sequence_number} | Details: {details}", flush=True)
         self.sequence_number += 1
         self.logger.send_event(event)
         
@@ -123,7 +122,7 @@ class DataHandler:
             self.known_devices[mac_address]['last_seen'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
             self.known_devices[mac_address]['online'] = True
             self.known_devices[mac_address]['status'] = 'active'
-            # self.generate_event(parsed_details, "DEVICE_ONLINE")
+            self.generate_event(parsed_details, "DEVICE_JOINED")
             
         
         if mac_address not in self.known_devices:
@@ -147,7 +146,6 @@ class DataHandler:
         if self._check_thread:
             self._stop_event.set()
             self._check_thread.join(timeout=5)
-            # print("[DATA HANDLER] Periodic device check stopped", flush=True)
     
     def periodic_check_for_device_leave(self):
         current_time = datetime.now(timezone.utc)
@@ -174,9 +172,5 @@ class DataHandler:
                     
                 elif elapsed > self.idle_seconds and details['status'] != 'idle':
                     details['status'] = 'idle'
-                    self.metric_data['active_devices'] -= 1
+                    self.metric_data['active_devices'] = 1
                     self.generate_event(details, "DEVICE_IDLE")
-                    
-        #     print(f"[PERIODIC CHECK] Device: {mac} | Last Seen: {last_seen_str} | Elapsed: {elapsed} seconds", flush=True)
-        # print(f"[PERIODIC CHECK] Known devices after check: {list(self.known_devices.keys())}", flush=True)
-        # print("[DATA HANDLER] Periodic device check completed", flush=True)

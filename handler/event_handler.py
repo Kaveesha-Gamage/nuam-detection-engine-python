@@ -28,6 +28,9 @@ class EventTypeHandler:
         elif event_type == "DEVICE_LEFT":
             event["type"] = "TOPOLOGY"
             event["payload"] = self.handle_device_left_event_type(details)
+        elif event_type == "PERIODIC_TOPOLOGY_STATE":
+            event["type"] = "TOPOLOGY"
+            event["payload"] = self.periodic_topology_event_type(details)
             
         return event
         
@@ -75,7 +78,6 @@ class EventTypeHandler:
         
         return event_payload
     
-    
     def handle_device_left_event_type(self, details):
         event_payload = {
             "event_type": "device_disconnected",
@@ -93,3 +95,13 @@ class EventTypeHandler:
         }
         
         return event_payload
+    
+    
+def periodic_topology_event_type(self, details):
+    event_payload = {
+        "event_type": "topology_snapshot",
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "topology": details
+    }
+    
+    return event_payload

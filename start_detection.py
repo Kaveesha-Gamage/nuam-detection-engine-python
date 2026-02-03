@@ -7,6 +7,7 @@ from utils.packet_source import start_sniffing
 
 def start_detection_engine():
     engine = DetectionEngine(ENABLED_DETECTORS)
+    INTERVAL = 5  # seconds
 
     logger = Logger(BACKEND_WS_URL)
     logger.init_socket_connection()
@@ -14,7 +15,7 @@ def start_detection_engine():
     event_type_handler = EventTypeHandler()
     data_handler = DataHandler(logger, event_type_handler)
 
-    data_handler.start_periodic_check(interval=10)
+    data_handler.start_periodic_check(interval=INTERVAL)
 
     def on_packet(pkt):
         packet_type = engine.observe_type(pkt)

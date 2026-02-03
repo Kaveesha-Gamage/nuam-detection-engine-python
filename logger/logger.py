@@ -44,7 +44,6 @@ class Logger:
             on_error=on_error
         )
 
-        # Run WebSocket in a separate daemon thread
         self.ws_thread = threading.Thread(target=self.ws_app.run_forever, kwargs={
             "ping_interval": 30,
             "ping_timeout": 10
