@@ -129,7 +129,7 @@ class DataHandler:
         if mac_address not in self.known_devices:
             parsed_details = self.parse_details(details)
             self.add_known_device(mac_address, parsed_details)
-            # self.generate_event(parsed_details, "DEVICE_JOINED")
+            self.generate_event(parsed_details, "DEVICE_JOINED")
             
     def handle_device_left_event(self, mac_address):
         return self.remove_from_known_devices(mac_address)
@@ -147,7 +147,7 @@ class DataHandler:
         if self._check_thread:
             self._stop_event.set()
             self._check_thread.join(timeout=5)
-            print("[DATA HANDLER] Periodic device check stopped", flush=True)
+            # print("[DATA HANDLER] Periodic device check stopped", flush=True)
     
     def periodic_check_for_device_leave(self):
         current_time = datetime.now(timezone.utc)
@@ -165,17 +165,18 @@ class DataHandler:
 
                 elapsed = (current_time - last_seen).total_seconds()
                 
-                if elapsed > self.timeout_seconds:
+                if elapsed > self.timeout_seconds and details['online'] == True :
                     details['online'] = False
+                    details['status'] = 'left'  
                     self.metric_data['active_devices'] -= 1
                     self.handle_device_left_event(mac)
-                    # self.generate_event(details, "DEVICE_LEFT")
+                    self.generate_event(details, "DEVICE_LEFT")
                     
-                elif elapsed > self.idle_seconds:
+                elif elapsed > self.idle_seconds and details['status'] != 'idle':
                     details['status'] = 'idle'
                     self.metric_data['active_devices'] -= 1
-                    # self.generate_event(details, "DEVICE_IDLE")
+                    self.generate_event(details, "DEVICE_IDLE")
                     
-            print(f"[PERIODIC CHECK] Device: {mac} | Last Seen: {last_seen_str} | Elapsed: {elapsed} seconds", flush=True)
-        print(f"[PERIODIC CHECK] Known devices after check: {list(self.known_devices.keys())}", flush=True)
-        print("[DATA HANDLER] Periodic device check completed", flush=True)
+        #     print(f"[PERIODIC CHECK] Device: {mac} | Last Seen: {last_seen_str} | Elapsed: {elapsed} seconds", flush=True)
+        # print(f"[PERIODIC CHECK] Known devices after check: {list(self.known_devices.keys())}", flush=True)
+        # print("[DATA HANDLER] Periodic device check completed", flush=True)

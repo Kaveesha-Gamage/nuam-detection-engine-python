@@ -1,44 +1,78 @@
 import websocket
 import json
 import logging
+import threading
 import time
 
 class Logger:
-
     def __init__(self, backend_ws_url, log_path="/media/sf_shared/logs.txt"):
         self.backend_ws_url = backend_ws_url
         self.log_path = log_path
-        self.ws = None
+        self.ws_app = None
+        self.ws_thread = None
+        self.ws_connected = False
+        
 
     def init_socket_connection(self):
-        try:
-            self.ws = websocket.WebSocket()
-            self.ws.connect(self.backend_ws_url)
-            print(f"[Logger] WebSocket connected {self.backend_ws_url}")
-        except Exception as e:
-            print(f"[ERROR] WebSocket connection failed: {e}")
-            self.ws = None
+        """Initialize WebSocketApp with callbacks and start in a separate thread"""
+        def on_open(ws):
+            self.ws_connected = True
+            print(f"[Logger] WebSocket opened: {self.backend_ws_url}")
+
+        def on_message(ws, message):
+            print(f"[Message] {message}")
+
+        def on_close(ws, close_status_code, close_msg):
+            self.ws_connected = False
+            print(f"[Logger] WebSocket closed: {close_status_code}, {close_msg}")
+            # reconnect automatically
+            while not self.ws_connected:
+                try:
+                    ws.run_forever()
+                except Exception as e:
+                    print(f"[ERROR] WebSocket reconnect failed: {e}")
+                    time.sleep(5)
+
+        def on_error(ws, error):
+            print(f"[ERROR] WebSocket error: {error}")
+
+        self.ws_app = websocket.WebSocketApp(
+            self.backend_ws_url,
+            on_open=on_open,
+            on_message=on_message,
+            on_close=on_close,
+            on_error=on_error
+        )
+
+        # Run WebSocket in a separate daemon thread
+        self.ws_thread = threading.Thread(target=self.ws_app.run_forever, kwargs={
+            "ping_interval": 30,
+            "ping_timeout": 10
+        })
+        self.ws_thread.daemon = True
+        self.ws_thread.start()
 
     def send_event(self, event):
-        if self.ws:
+        if self.ws_connected:
             try:
-                self.ws.send(json.dumps(event))
+                self.ws_app.send(json.dumps(event))
             except Exception as e:
                 print(f"[ERROR] Failed to send event: {e}")
-                self.ws = None
                 self.log_event(event)
         else:
             self.log_event(event)
 
     def log_event(self, event):
         print(
-            f"[{event['detected_timestamp']}] "
-            f"Detector: {event['detector']}, Details: {event['details']}"
+            f"[{event.get('detected_timestamp', 'N/A')}] "
+            f"Detector: {event.get('detector', 'N/A')}, Details: {event.get('details', {})}"
         )
+        self.write_to_file(event)
 
-    def write_to_file(self, event, file_path="/media/sf_shared/logs.txt"):
+    def write_to_file(self, event, file_path=None):
+        path = file_path or self.log_path
         try:
-            with open(file_path, "a") as f:
+            with open(path, "a") as f:
                 f.write(json.dumps(event) + "\n")
         except Exception as e:
             print(f"[ERROR] Failed to write log to file: {e}")

@@ -15,16 +15,81 @@ class EventTypeHandler:
                 "sequence": seq_number,
             },
             "type": "", # STATE | METRIC | TOPOLOGY | HEALTH
+            "subtype": event_type,
             "payload": details
         }
         
         if event_type == "DEVICE_JOINED":
             event["payload"] = self.handle_device_joined_event_type(details)
             event["type"] = self.event__to_state_mapper[event_type]
-        else:
-            pass
-        
+        elif event_type == "DEVICE_IDLE":
+            event["type"] = "STATE"
+            event["payload"] = self.handle_device_idle_event_type(details)
+        elif event_type == "DEVICE_LEFT":
+            event["type"] = "TOPOLOGY"
+            event["payload"] = self.handle_device_left_event_type(details)
+            
         return event
         
-    def handle_device_joined_event_type(self , details):
-        pass
+    def handle_device_joined_event_type(self, details):
+        
+        event_payload = {
+            "event_type": "device_connected",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "device": {
+                "device_id": details["mac"],
+                "hostname": details["hostname"],
+                "ip_address": details["ip_address"],
+                "device_type": details["device_type"],
+                "os": details["os"],
+                "vendor": details["vendor"],
+                "first_seen": details["first_seen"],
+                "last_seen":  details["last_seen"]
+            },
+            # "network": {
+            #     "interface": details.get("interface"),
+            #     "vlan": details.get("vlan"),
+            #     "signal_strength": details.get("signal_strength"),  # for Wi-Fi
+            #     "connection_type": details.get("connection_type", "wired")
+            # }
+        }
+        
+        return event_payload
+    
+    def handle_device_idle_event_type(self, details):
+        
+        event_payload = {
+            "event_type": "device_idle",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "device": {
+                "device_id": details["mac"],
+                "hostname": details["hostname"],
+                "ip_address": details["ip_address"],
+                "device_type": details["device_type"],
+                "os": details["os"],
+                "vendor": details["vendor"],
+                "first_seen": details['first_seen'],
+                "last_seen": details["last_seen"]
+            }
+        }
+        
+        return event_payload
+    
+    
+    def handle_device_left_event_type(self, details):
+        event_payload = {
+            "event_type": "device_disconnected",
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "device": {
+                "device_id": details["mac"],
+                "hostname": details["hostname"],
+                "ip_address": details["ip_address"],
+                "device_type": details["device_type"],
+                "os": details["os"],
+                "vendor": details["vendor"],
+                "last_seen": details["last_seen"],
+                "first_seen": details['first_seen']
+            }
+        }
+        
+        return event_payload
