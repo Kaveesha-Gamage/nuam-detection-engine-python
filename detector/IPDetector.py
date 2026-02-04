@@ -10,6 +10,7 @@ class IPDetector(Detector):
         eth = packet.getlayer(Ether)
         
         details = {
+            "packet_type": "IP",
             "eth_src": eth.src,
             "eth_dst": eth.dst,
             "eth_type": eth.type,
@@ -25,6 +26,9 @@ class IPDetector(Detector):
             "ttl": ip_layer.ttl,
             "proto": ip_layer.proto,
             "chksum": ip_layer.chksum,
+            "is_broadcast": eth.dst == "ff:ff:ff:ff:ff:ff:ff:ff",
+            "options": ip_layer.options,
+            "data_sent": len(packet)
         }
         
         return details

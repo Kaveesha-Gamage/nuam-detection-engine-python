@@ -30,6 +30,16 @@ if __name__ == "__main__":
         stderr=subprocess.PIPE
     )
     
+    # while True:
+    #     line = det_engine_proc.stdout.readline()
+    #     if line:
+    #         print("[DetectionEngine]", line.decode().strip())
+    #     elif det_engine_proc.poll() is not None:
+    #         print("Detection engine stopped!")
+    #         break
+        
+        
+    # enable when detection engine stopped error occured to see the actual error
     while True:
         stdout_line = det_engine_proc.stdout.readline()
         stderr_line = det_engine_proc.stderr.readline()

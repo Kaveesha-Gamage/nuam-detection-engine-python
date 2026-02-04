@@ -1,6 +1,6 @@
 from detector.ARPDetector import ARPDetector
 from detector.IPDetector import IPDetector
-from detector.TCPIP import TCPIPDetector
+from detector.TCPIPDetector import TCPIPDetector
 import os
 
 

@@ -10,6 +10,7 @@ class ARPDetector(Detector):
         eth = packet.getlayer(Ether)
         
         details = {
+            "packet_type": "ARP",
             "eth_src": eth.src,
             "eth_dst": eth.dst,
             "eth_type": eth.type,
@@ -18,6 +19,7 @@ class ARPDetector(Detector):
             "dst_mac": arp_layer.hwdst,
             "src_ip": arp_layer.psrc,
             "dst_ip": arp_layer.pdst,
-            "operation": arp_layer.op
+            "operation": arp_layer.op,
+            "data_sent": len(packet),
         }
         return details

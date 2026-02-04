@@ -15,10 +15,12 @@ def start_detection_engine():
     event_type_handler = EventTypeHandler()
     data_handler = DataHandler(logger, event_type_handler)
 
-    data_handler.start_periodic_check(10)
+    data_handler.start_periodic_check(INTERVAL)
+    data_handler.send_periodic_metrics(INTERVAL)
 
     def on_packet(pkt):
         packet_type = engine.observe_type(pkt)
+        
         if packet_type not in ENABLED_DETECTORS:
             return
 

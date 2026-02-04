@@ -4,6 +4,8 @@ from handler.event_handler import EventTypeHandler
 from threading import Thread, Event
 import time
 
+from packet_analyzer.metric_analyzer import MetricAnalyzer
+
 class DataHandler:
     
     def __init__(self, logger: Logger , event_type_handler: EventTypeHandler):
@@ -27,7 +29,8 @@ class DataHandler:
             "icmp_packets": 0,
             "dns_queries": 0,
             "http_requests": 0,
-            "tls_handshakes": 0
+            "tls_handshakes": 0,
+            "total_packets": 0
         }
         
         self.sequence_number = 0
@@ -35,6 +38,7 @@ class DataHandler:
         self._check_thread = None
         self.timeout_seconds = 300
         self.idle_seconds = 180
+        self.mectric_analyzer = MetricAnalyzer(event_type_handler)
 
     def parse_details(self, details):
         out = {}
@@ -70,6 +74,7 @@ class DataHandler:
         
     def handle_observed_data(self, details , observed_type):
         self.handle_device_join_event(details)
+        self.mectric_analyzer.analyze(details, self.known_devices , self.metric_data)
         
     def send_batch_data(self):
         if len(self.batch) > 0:
@@ -140,6 +145,17 @@ class DataHandler:
         
         self._check_thread = Thread(target=_periodic_check, daemon=True)
         self._check_thread.start()
+        
+    def send_periodic_metrics(self , interval=10):
+        def _metric_check():
+            while not self._stop_event.is_set():
+                event = self.event_type_handler.handle_event_type("PERIODIC_METRIC_STATE", self.metric_data, self.sequence_number)
+                self.sequence_number += 1
+                self.logger.send_event(event)
+                time.sleep(interval)
+        
+        metric_thread = Thread(target=_metric_check, daemon=True)
+        metric_thread.start()
     
     def stop_periodic_check(self):
         if self._check_thread:
@@ -172,5 +188,5 @@ class DataHandler:
                     
                 elif elapsed > self.idle_seconds and details['status'] != 'idle':
                     details['status'] = 'idle'
-                    self.metric_data['active_devices'] = 1
+                    self.metric_data['active_devices'] -= 1
                     self.generate_event(details, "DEVICE_IDLE")

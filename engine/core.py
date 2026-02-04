@@ -1,29 +1,32 @@
-from scapy.all import ARP, IP
+from scapy.all import ARP, IP, TCP, UDP, ICMP, DNS
 
 class DetectionEngine:
     def __init__(self , detectors):
         self.detectors = detectors
         
     def observe_type(self, packet):
-        
+    
         if ARP in packet:
             return "ARP"
-        elif packet.hasLayer('IP') and packet.hasLayer('TCP'):
+
+        elif IP in packet and TCP in packet:
             return "TCP-IP"
+
         elif IP in packet:
             return "IP"
-        elif packet.haslayer('TCP'):
+
+        elif TCP in packet:
             return "TCP"
-        elif packet.haslayer('UDP'):
+
+        elif UDP in packet:
             return "UDP"
-        elif packet.haslayer('ICMP'):
+
+        elif ICMP in packet:
             return "ICMP"
-        elif packet.haslayer('DNS'):
+
+        elif DNS in packet:
             return "DNS"
-        elif packet.haslayer('HTTP'):
-            return "HTTP"
-        elif packet.haslayer('TLS'):
-            return "TLS"
+
         return None
     
     
