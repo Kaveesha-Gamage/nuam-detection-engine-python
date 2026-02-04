@@ -31,11 +31,24 @@ if __name__ == "__main__":
     )
     
     while True:
-        line = det_engine_proc.stdout.readline()
-        if line:
-            print("[DetectionEngine]", line.decode().strip())
-        elif det_engine_proc.poll() is not None:
-            print("Detection engine stopped!")
+        stdout_line = det_engine_proc.stdout.readline()
+        stderr_line = det_engine_proc.stderr.readline()
+
+        if stdout_line:
+            print("[DetectionEngine]", stdout_line.decode().strip())
+
+        if stderr_line:
+            print("[DetectionEngine][ERROR]", stderr_line.decode().strip())
+
+        if det_engine_proc.poll() is not None:
+            print(f"[DetectionEngine] exited with code {det_engine_proc.returncode}")
+
+            # Drain remaining stderr (very important)
+            remaining_err = det_engine_proc.stderr.read()
+            if remaining_err:
+                print("[DetectionEngine][FATAL]")
+                print(remaining_err.decode())
+
             break
                 
     CLI(net)

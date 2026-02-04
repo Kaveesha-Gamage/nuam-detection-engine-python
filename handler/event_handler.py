@@ -31,6 +31,9 @@ class EventTypeHandler:
         elif event_type == "PERIODIC_TOPOLOGY_STATE":
             event["type"] = "TOPOLOGY"
             event["payload"] = self.periodic_topology_event_type(details)
+        elif event_type == "PERIODIC_METRIC_STATE":
+            event["type"] = "METRIC"
+            event["payload"] = details
             
         return event
         
@@ -38,7 +41,7 @@ class EventTypeHandler:
         
         event_payload = {
             "event_type": "device_connected",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             "device": {
                 "device_id": details["mac"],
                 "hostname": details["hostname"],
@@ -63,7 +66,7 @@ class EventTypeHandler:
         
         event_payload = {
             "event_type": "device_idle",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             "device": {
                 "device_id": details["mac"],
                 "hostname": details["hostname"],
@@ -81,7 +84,7 @@ class EventTypeHandler:
     def handle_device_left_event_type(self, details):
         event_payload = {
             "event_type": "device_disconnected",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
             "device": {
                 "device_id": details["mac"],
                 "hostname": details["hostname"],
@@ -97,11 +100,40 @@ class EventTypeHandler:
         return event_payload
     
     
-def periodic_topology_event_type(self, details):
+def periodic_topology_event_type(self, metric_data , known_devices):
     event_payload = {
         "event_type": "topology_snapshot",
-        "timestamp": datetime.now(timezone.utc).isoformat(),
-        "topology": details
+        "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+        "topology": {
+            "devices": list(known_devices.values()),
+        }
+    }
+    
+    return event_payload
+
+
+def periodic_metric_event_type(self, metric_data):
+    event_payload = {
+        "event_type": "metric_snapshot",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z'),
+        "metrics": {
+            "measure_time": metric_data["measure_time"],
+            "total_devices": metric_data["total_devices"],
+            "active_devices": metric_data["active_devices"],
+            "data_sent": metric_data["data_sent"],
+            "data_received": metric_data["data_received"],
+            "total_broadcast_packets": metric_data["total_broadcast_packets"],
+            "total_unicast_packets": metric_data["total_unicast_packets"],
+            "arp_requests": metric_data["arp_requests"],
+            "arp_replies": metric_data["arp_replies"],
+            "ip_packets": metric_data["ip_packets"],
+            "tcp_packets": metric_data["tcp_packets"],
+            "udp_packets": metric_data["udp_packets"],
+            "icmp_packets": metric_data["icmp_packets"],
+            "dns_queries": metric_data["dns_queries"],
+            "http_requests": metric_data["http_requests"],
+            "tls_handshakes": metric_data["tls_handshakes"]
+        }
     }
     
     return event_payload

@@ -8,6 +8,8 @@ class DetectionEngine:
         
         if ARP in packet:
             return "ARP"
+        elif packet.hasLayer('IP') and packet.hasLayer('TCP'):
+            return "TCP-IP"
         elif IP in packet:
             return "IP"
         elif packet.haslayer('TCP'):

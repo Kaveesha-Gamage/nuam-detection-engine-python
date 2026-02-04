@@ -114,19 +114,18 @@ class DataHandler:
         if mac_address == 'Unknown':
             return
                 
+        parsed_details = self.parse_details(details)
+        
         if mac_address in self.known_devices:
             if self.known_devices[mac_address]['mac'] == "Unknown":
-                parsed_details = self.parse_details(details)
                 self.known_devices[mac_address].update(parsed_details)
         
             self.known_devices[mac_address]['last_seen'] = datetime.now(timezone.utc).isoformat().replace('+00:00', 'Z')
             self.known_devices[mac_address]['online'] = True
             self.known_devices[mac_address]['status'] = 'active'
-            self.generate_event(parsed_details, "DEVICE_JOINED")
             
-        
+                    
         if mac_address not in self.known_devices:
-            parsed_details = self.parse_details(details)
             self.add_known_device(mac_address, parsed_details)
             self.generate_event(parsed_details, "DEVICE_JOINED")
             
@@ -148,6 +147,7 @@ class DataHandler:
             self._check_thread.join(timeout=5)
     
     def periodic_check_for_device_leave(self):
+        print("Running periodic check for device leave...")
         current_time = datetime.now(timezone.utc)
         
         if len(self.known_devices.keys()) == 0:
