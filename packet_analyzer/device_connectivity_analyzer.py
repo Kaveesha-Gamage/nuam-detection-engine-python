@@ -129,29 +129,30 @@ class ConnectivityJoinAnalyzer(BaseAnalyzer):
             parsed_details['vendor'] = analyzer_result['manufacturer']
             parsed_details['device_type'] = analyzer_result['device_type']
             parsed_details['os'] = analyzer_result['os']
+            parsed_details['status'] = 'active'
             
             self.add_known_device(mac_address, parsed_details, known_devices, metric_data)
             generate_event(parsed_details, "DEVICE_JOINED")
         
 
-class ConnectivityLeaveAnalyzer(BaseAnalyzer):
+# class ConnectivityLeaveAnalyzer(BaseAnalyzer):
     
-    def __init__(self, event_type_handler: EventTypeHandler):
-        super().__init__(event_type_handler)
+#     def __init__(self, event_type_handler: EventTypeHandler):
+#         super().__init__(event_type_handler)
     
-    def analyze(self, details, known_devices , metric_data , generate_event):
-        mac_address = ""
-        if "src_mac" in details:
-            mac_address = details['src_mac']
-        elif "eth_src" in details:
-            mac_address = details['eth_src']
-        else:
-            mac_address = 'Unknown'
+#     def analyze(self, details, known_devices , metric_data , generate_event):
+#         mac_address = ""
+#         if "src_mac" in details:
+#             mac_address = details['src_mac']
+#         elif "eth_src" in details:
+#             mac_address = details['eth_src']
+#         else:
+#             mac_address = 'Unknown'
             
-        if mac_address == 'Unknown':
-            return
+#         if mac_address == 'Unknown':
+#             return
                 
-        if mac_address in known_devices:
-            known_devices[mac_address]['online'] = False
-            known_devices[mac_address]['status'] = 'inactive'
-            generate_event(known_devices[mac_address], "DEVICE_LEFT")
+#         if mac_address in known_devices:
+#             known_devices[mac_address]['online'] = False
+#             known_devices[mac_address]['status'] = 'inactive'
+#             generate_event(known_devices[mac_address], "DEVICE_LEFT")
